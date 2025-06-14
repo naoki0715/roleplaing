@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Role-Playing Tool (Enhanced)</title>
+    <title>AI Role-Playing Tool (Stabilized & Enhanced)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -15,12 +15,13 @@
         .ai-thinking-dot:nth-child(2) { animation-delay: -0.16s; }
         @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
         .mic-active { color: #ef4444; }
+        #notification { transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; }
     </style>
 </head>
 <body class="bg-slate-100 font-sans antialiased text-slate-800">
     
     <!-- Notification Element -->
-    <div id="notification" class="hidden fixed top-5 right-5 bg-red-600 text-white py-3 px-5 rounded-lg shadow-xl z-50 transition-all duration-300 transform translate-x-full">
+    <div id="notification" class="hidden fixed top-5 right-5 bg-red-600 text-white py-3 px-5 rounded-lg shadow-xl z-50 transform translate-x-full opacity-0">
         <!-- Message will be injected here -->
     </div>
 
@@ -103,7 +104,7 @@
                     </div>
                 </div>
                 <div class="flex items-center">
-                    <button id="mic-btn" class="text-slate-500 hover:text-blue-500 p-3 text-2xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"><i class="fas fa-microphone"></i></button>
+                    <button id="mic-btn" class="text-slate-500 hover:text-blue-500 p-3 text-2xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="マイク入力"><i class="fas fa-microphone"></i></button>
                     <input type="text" id="chat-input" class="flex-grow border rounded-l-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="メッセージを入力、またはマイクをクリック...">
                     <button id="send-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-r-lg transition-colors">
                         <i class="fas fa-paper-plane"></i>
@@ -114,7 +115,6 @@
 
         <!-- Screen: Feedback -->
         <main id="screen-feedback" class="hidden">
-            <!-- Same as before -->
             <div class="bg-white p-6 rounded-lg shadow-md">
                 <h2 class="text-2xl font-bold mb-4 text-center">フィードバックレポート</h2>
                 <div id="feedback-loading" class="text-center p-8">
@@ -133,12 +133,7 @@
 
     <script>
         // --- DOM Elements ---
-        const screens = {
-            scenarioSelect: document.getElementById('screen-scenario-select'),
-            createScenario: document.getElementById('screen-create-scenario'),
-            roleplay: document.getElementById('screen-roleplay'),
-            feedback: document.getElementById('screen-feedback')
-        };
+        const screens = { scenarioSelect: document.getElementById('screen-scenario-select'), createScenario: document.getElementById('screen-create-scenario'), roleplay: document.getElementById('screen-roleplay'), feedback: document.getElementById('screen-feedback') };
         const notification = document.getElementById('notification');
         const showCreateScenarioBtn = document.getElementById('show-create-scenario-btn');
         const saveScenarioBtn = document.getElementById('save-scenario-btn');
@@ -160,59 +155,30 @@
         // --- Speech API ---
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = SpeechRecognition ? new SpeechRecognition() : null;
-        if (recognition) {
-            recognition.lang = 'ja-JP';
-            recognition.interimResults = false;
-        }
         const synth = window.speechSynthesis;
+        let japaneseVoice = null;
 
         // --- Scenarios Definition ---
         let scenarios = [
-             {
-                id: 'sales_initial_visit',
-                title: '新規顧客への初回訪問（営業）',
-                description: '自社の新しいSaaS製品を紹介するため、興味を持ってくれている企業の担当者と初めて面会します。',
-                icon: 'fa-handshake',
-                persona: 'AIペルソナ: 担当者（多忙だが協力的）',
-                systemPrompt: `あなたは企業の担当者です。多忙ですが、新しいSaaS製品には興味があります。ユーザーは営業担当として、あなたに製品の魅力を伝えます。簡潔で分かりやすい説明を好み、具体的な導入メリットや価格について質問してください。ユーザーの対話が続くように、相槌や質問を投げかけてください。`,
-                isCustom: false
-            },
-            {
-                id: 'claim_handling',
-                title: '製品不具合に関するクレーム対応',
-                description: '購入した製品に不具合があったと、少し怒り気味のお客様から連絡がありました。状況をヒアリングし、対応を協議します。',
-                icon: 'fa-phone-volume',
-                persona: 'AIペルソナ: 顧客（不満・少し感情的）',
-                systemPrompt: `あなたはこの会社の製品を購入した顧客です。製品に不具合があり、非常に困っており、少し怒っています。ユーザーはサポート担当として、あなたの話を聞きます。あなたはまず状況を感情的に訴えますが、ユーザーの対応が真摯であれば、徐々に冷静さを取り戻します。具体的な解決策を求めてください。`,
-                isCustom: false
-            },
-            {
-                id: '1on1_meeting',
-                title: '部下との1on1ミーティング',
-                description: '最近、少し元気がないように見える部下と1on1を行います。安心して話せる雰囲気を作り、現状の課題や悩みを引き出します。',
-                icon: 'fa-users',
-                persona: 'AIペルソナ: 部下（悩みがある・口が重い）',
-                systemPrompt: `あなたはとある企業の社員です。最近、業務の量と責任が増したことで、少し疲れており、将来に漠然とした不安を感じています。ユーザーはあなたの上司です。あなたは自分から積極的に話すタイプではありませんが、上司が真摯に耳を傾け、安心できる雰囲気を作ってくれれば、少しずつ自分の気持ちを話そうとします。`,
-                isCustom: false
-            },
+             { id: 'sales_initial_visit', title: '新規顧客への初回訪問（営業）', description: '自社の新しいSaaS製品を紹介するため、興味を持ってくれている企業の担当者と初めて面会します。', icon: 'fa-handshake', persona: 'AIペルソナ: 担当者（多忙だが協力的）', systemPrompt: `あなたは企業の担当者です。多忙ですが、新しいSaaS製品には興味があります。ユーザーは営業担当として、あなたに製品の魅力を伝えます。簡潔で分かりやすい説明を好み、具体的な導入メリットや価格について質問してください。ユーザーの対話が続くように、相槌や質問を投げかけてください。`, isCustom: false },
+             { id: 'claim_handling', title: '製品不具合に関するクレーム対応', description: '購入した製品に不具合があったと、少し怒り気味のお客様から連絡がありました。状況をヒアリングし、対応を協議します。', icon: 'fa-phone-volume', persona: 'AIペルソナ: 顧客（不満・少し感情的）', systemPrompt: `あなたはこの会社の製品を購入した顧客です。製品に不具合があり、非常に困っており、少し怒っています。ユーザーはサポート担当として、あなたの話を聞きます。あなたはまず状況を感情的に訴えますが、ユーザーの対応が真摯であれば、徐々に冷静さを取り戻します。具体的な解決策を求めてください。`, isCustom: false },
+             { id: '1on1_meeting', title: '部下との1on1ミーティング', description: '最近、少し元気がないように見える部下と1on1を行います。安心して話せる雰囲気を作り、現状の課題や悩みを引き出します。', icon: 'fa-users', persona: 'AIペルソナ: 部下（悩みがある・口が重い）', systemPrompt: `あなたはとある企業の社員です。最近、業務の量と責任が増したことで、少し疲れており、将来に漠然とした不安を感じています。ユーザーはあなたの上司です。あなたは自分から積極的に話すタイプではありませんが、上司が真摯に耳を傾け、安心できる雰囲気を作ってくれれば、少しずつ自分の気持ちを話そうとします。`, isCustom: false },
         ];
 
         // --- App State ---
-        let currentScreen = 'scenarioSelect';
         let currentScenario = null;
-        let conversationHistory = []; // Stores the history for API calls
+        let conversationHistoryForApi = [];
         let isListening = false;
         
         // --- Functions ---
         
         function showNotification(message, duration = 5000) {
             notification.textContent = message;
-            notification.classList.remove('hidden', 'translate-x-full');
-            notification.classList.add('translate-x-0');
+            notification.classList.remove('hidden', 'translate-x-full', 'opacity-0');
+            notification.classList.add('translate-x-0', 'opacity-100');
             setTimeout(() => {
-                notification.classList.remove('translate-x-0');
-                notification.classList.add('translate-x-full');
-                // Allow transition to finish before hiding
+                notification.classList.remove('translate-x-0', 'opacity-100');
+                notification.classList.add('translate-x-full', 'opacity-0');
                 setTimeout(() => notification.classList.add('hidden'), 300);
             }, duration);
         }
@@ -220,7 +186,6 @@
         function showScreen(screenName) {
             Object.values(screens).forEach(screen => screen.classList.add('hidden'));
             screens[screenName].classList.remove('hidden');
-            currentScreen = screenName;
         }
 
         function renderScenarios() {
@@ -228,14 +193,12 @@
             scenarios.forEach(scenario => {
                 const card = document.createElement('div');
                 card.className = 'bg-slate-50 hover:bg-slate-100 p-6 rounded-lg shadow-sm cursor-pointer transition-all duration-300 transform hover:scale-105 relative';
-                card.innerHTML = `
-                    ${scenario.isCustom ? '<span class="absolute top-2 right-2 text-xs bg-blue-500 text-white font-semibold py-1 px-2 rounded-full">自作</span>' : ''}
-                    <div class="flex items-center mb-3">
+                card.innerHTML = `<div class="flex items-center mb-3">
                         <i class="fas ${scenario.icon || 'fa-comment-dots'} text-2xl text-blue-500 mr-4"></i>
                         <h3 class="text-lg font-bold text-slate-800">${scenario.title}</h3>
                     </div>
                     <p class="text-slate-600">${scenario.description}</p>
-                `;
+                    ${scenario.isCustom ? '<span class="absolute top-2 right-2 text-xs bg-blue-500 text-white font-semibold py-1 px-2 rounded-full">自作</span>' : ''}`;
                 card.addEventListener('click', () => startRoleplay(scenario));
                 scenarioList.appendChild(card);
             });
@@ -246,11 +209,13 @@
             roleplayTitle.textContent = scenario.title;
             roleplayPersona.textContent = scenario.persona;
             chatHistory.innerHTML = '';
-            conversationHistory = [{ role: 'system', parts: [{ text: scenario.systemPrompt }] }];
             
+            // API用の会話履歴を初期化
+            conversationHistoryForApi = [];
+
             const firstMessage = "こんにちは。本日はよろしくお願いいたします。";
             addMessageToChat('ai', firstMessage);
-            conversationHistory.push({ role: 'model', parts: [{ text: firstMessage}] });
+            // API履歴にはユーザーの発話から追加するため、AIの初回メッセージは追加しない
             speakText(firstMessage);
 
             showScreen('roleplay');
@@ -262,16 +227,12 @@
             const iconClass = sender === 'user' ? 'fa-user' : 'fa-robot';
             const bgColor = sender === 'user' ? 'bg-blue-500 text-white' : 'bg-slate-200 text-slate-800';
             const iconBgColor = sender === 'user' ? 'bg-blue-200 text-blue-600' : 'bg-slate-200 text-slate-500';
-            messageWrapper.innerHTML = `
-                <div class="flex items-end ${sender === 'user' ? 'flex-row-reverse' : 'flex-row'}">
+            messageWrapper.innerHTML = `<div class="flex items-end ${sender === 'user' ? 'flex-row-reverse' : 'flex-row'}">
                     <div class="w-10 h-10 rounded-full flex items-center justify-center ${iconBgColor} flex-shrink-0">
                         <i class="fas ${iconClass}"></i>
                     </div>
-                    <div class="p-3 rounded-lg max-w-sm md:max-w-md ${bgColor} ${sender === 'user' ? 'mr-3' : 'ml-3'}">
-                        ${text}
-                    </div>
-                </div>
-            `;
+                    <div class="p-3 rounded-lg max-w-sm md:max-w-md ${bgColor} ${sender === 'user' ? 'mr-3' : 'ml-3'}">${text}</div>
+                </div>`;
             chatHistory.appendChild(messageWrapper);
             chatHistory.scrollTop = chatHistory.scrollHeight;
         }
@@ -281,34 +242,44 @@
             if (!userText) return;
 
             addMessageToChat('user', userText);
-            conversationHistory.push({ role: 'user', parts: [{ text: userText }] });
+            conversationHistoryForApi.push({ role: 'user', parts: [{ text: userText }] });
             chatInput.value = '';
             aiThinkingIndicator.classList.remove('hidden');
 
             try {
                 const payload = { 
-                    contents: conversationHistory.filter(c => c.role !== 'system').map(c => ({ role: c.role === 'model' ? 'model' : 'user', parts: c.parts})),
+                    contents: conversationHistoryForApi,
                     systemInstruction: { parts: [{ text: currentScenario.systemPrompt }] }
                 };
                 
+                console.log("Sending payload to API:", JSON.stringify(payload, null, 2));
+
                 const apiKey = ""; // Leave blank
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
                 const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+                
+                const responseData = await response.json();
+                console.log("Received response from API:", responseData);
+                
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.statusText} - ${responseData.error?.message || 'Unknown error'}`);
+                }
 
-                const result = await response.json();
                 let aiText = "申し訳ありません、うまく応答できませんでした。";
-                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content.parts.length > 0) {
-                     aiText = result.candidates[0].content.parts[0].text;
+                if (responseData.candidates && responseData.candidates.length > 0 && responseData.candidates[0].content.parts.length > 0) {
+                     aiText = responseData.candidates[0].content.parts[0].text;
+                } else if (responseData.promptFeedback) {
+                     aiText = `応答を生成できませんでした。理由: ${responseData.promptFeedback.blockReason}`;
                 }
 
                 addMessageToChat('ai', aiText);
-                conversationHistory.push({ role: 'model', parts: [{ text: aiText }] });
+                conversationHistoryForApi.push({ role: 'model', parts: [{ text: aiText }] });
                 speakText(aiText);
 
             } catch (error) {
                 console.error("Error calling Gemini API:", error);
                 addMessageToChat('ai', "エラーが発生しました。しばらくしてから再度お試しください。");
+                showNotification(`APIエラー: ${error.message}`);
             } finally {
                 aiThinkingIndicator.classList.add('hidden');
             }
@@ -320,7 +291,7 @@
             feedbackLoading.classList.remove('hidden');
 
             try {
-                const fullConversation = conversationHistory.slice(1).map(turn => `${turn.role === 'user' ? 'あなた' : 'AI'}: ${turn.parts[0].text}`).join('\n');
+                const fullConversation = conversationHistoryForApi.map(turn => `${turn.role === 'user' ? 'あなた' : 'AI'}: ${turn.parts[0].text}`).join('\n');
                 const feedbackPrompt = `以下のロールプレイング対話ログを分析し、ユーザー（「あなた」）のコミュニケーションについて、プロのビジネス研修講師の視点からフィードバックレポートを作成してください。\n\n# シナリオ設定\n${currentScenario.title}\n${currentScenario.description}\n\n# 対話ログ\n${fullConversation}\n\n# 出力形式\n以下のJSON形式で、具体的な発言を引用しながら、客観的かつ建設的なフィードバックを生成してください。\n{\n    "overallScore": "S, A, B, C, Dの5段階評価",\n    "summary": "対話全体の総評（150字程度）",\n    "goodPoints": [\n        { "point": "良かった点（例：効果的な質問ができていた）", "example": "引用する具体的な発言" }\n    ],\n    "improvementPoints": [\n        { "point": "改善点（例：結論を先に話すとより伝わりやすい）", "example": "引用する具体的な発言" }\n    ]\n}`;
 
                 const payload = { 
@@ -336,12 +307,11 @@
                 if (result.candidates && result.candidates.length > 0) {
                      const feedbackData = JSON.parse(result.candidates[0].content.parts[0].text);
                      renderFeedback(feedbackData);
-                } else {
-                    throw new Error("フィードバックが生成されませんでした。");
-                }
+                } else { throw new Error("フィードバックが生成されませんでした。"); }
             } catch (error) {
                 console.error("Error generating feedback:", error);
                 feedbackContent.innerHTML = `<p class="text-center text-red-500">フィードバックの生成中にエラーが発生しました。</p>`;
+                showNotification("フィードバックの生成に失敗しました。");
             } finally {
                 feedbackLoading.classList.add('hidden');
                 feedbackContent.classList.remove('hidden');
@@ -352,14 +322,12 @@
             const scoreColor = { 'S': 'text-purple-500', 'A': 'text-red-500', 'B': 'text-blue-500', 'C': 'text-yellow-600', 'D': 'text-gray-500' };
             const createPointList = (points, icon, color) => {
                 if (!points || points.length === 0) return '<p class="text-slate-500">特にありません。</p>';
-                return points.map(p => `
-                    <div class="mb-4">
+                return points.map(p => `<div class="mb-4">
                         <p class="font-bold"><i class="fas ${icon} ${color} mr-2"></i>${p.point || ''}</p>
                         ${p.example ? `<p class="text-sm text-slate-600 bg-slate-100 p-2 rounded mt-1 border-l-4 border-slate-300">引用: 「${p.example}」</p>` : ''}
                     </div>`).join('');
             };
-            feedbackContent.innerHTML = `
-                <div class="text-center mb-6"><p class="text-lg text-slate-600">総合評価</p><p class="text-7xl font-black ${scoreColor[data.overallScore] || 'text-gray-700'}">${data.overallScore}</p></div>
+            feedbackContent.innerHTML = `<div class="text-center mb-6"><p class="text-lg text-slate-600">総合評価</p><p class="text-7xl font-black ${scoreColor[data.overallScore] || 'text-gray-700'}">${data.overallScore}</p></div>
                 <div class="bg-slate-50 p-4 rounded-lg mb-6"><h3 class="font-bold text-lg mb-2"><i class="fas fa-comment-alt mr-2 text-slate-500"></i>総評</h3><p>${data.summary}</p></div>
                 <div class="grid md:grid-cols-2 gap-6">
                     <div class="bg-green-50 p-4 rounded-lg"><h3 class="font-bold text-lg mb-4 text-green-700"><i class="fas fa-thumbs-up mr-2"></i>良かった点</h3>${createPointList(data.goodPoints, 'fa-check-circle', 'text-green-500')}</div>
@@ -369,90 +337,68 @@
         
         // --- Scenario Management ---
         function saveCustomScenarios() {
-            const customScenarios = scenarios.filter(s => s.isCustom);
-            localStorage.setItem('ai-roleplay-custom-scenarios', JSON.stringify(customScenarios));
+            localStorage.setItem('ai-roleplay-custom-scenarios', JSON.stringify(scenarios.filter(s => s.isCustom)));
         }
-
         function loadCustomScenarios() {
             const saved = localStorage.getItem('ai-roleplay-custom-scenarios');
-            if (saved) {
-                const customScenarios = JSON.parse(saved);
-                scenarios.push(...customScenarios);
-            }
+            if (saved) scenarios.push(...JSON.parse(saved));
         }
-        
         function handleSaveScenario() {
-            const newScenario = {
-                id: `custom_${Date.now()}`,
-                title: document.getElementById('new-scenario-title').value.trim(),
-                description: document.getElementById('new-scenario-description').value.trim(),
-                persona: document.getElementById('new-scenario-persona').value.trim(),
-                systemPrompt: document.getElementById('new-scenario-prompt').value.trim(),
-                icon: 'fa-user-edit',
-                isCustom: true
-            };
-            if (!newScenario.title || !newScenario.systemPrompt) {
-                showNotification('「タイトル」と「AIへの指示」は必須です。');
-                return;
-            }
+            const newScenario = { id: `custom_${Date.now()}`, title: document.getElementById('new-scenario-title').value.trim(), description: document.getElementById('new-scenario-description').value.trim(), persona: document.getElementById('new-scenario-persona').value.trim(), systemPrompt: document.getElementById('new-scenario-prompt').value.trim(), icon: 'fa-user-edit', isCustom: true };
+            if (!newScenario.title || !newScenario.systemPrompt) { showNotification('「タイトル」と「AIへの指示」は必須です。'); return; }
             scenarios.push(newScenario);
             saveCustomScenarios();
             renderScenarios();
             showScreen('scenarioSelect');
-            // Clear form
-            document.getElementById('new-scenario-title').value = '';
-            document.getElementById('new-scenario-description').value = '';
-            document.getElementById('new-scenario-persona').value = '';
-            document.getElementById('new-scenario-prompt').value = '';
+            document.getElementById('new-scenario-title').value = ''; document.getElementById('new-scenario-description').value = ''; document.getElementById('new-scenario-persona').value = ''; document.getElementById('new-scenario-prompt').value = '';
         }
 
         // --- Speech API Functions ---
-        function speakText(text) {
-            if (synth.speaking) {
-                synth.cancel();
+        function initSpeechSynthesis() {
+            const setVoice = () => {
+                const voices = synth.getVoices();
+                japaneseVoice = voices.find(voice => voice.lang === 'ja-JP' && voice.name.includes('Kyoko')) 
+                             || voices.find(voice => voice.lang === 'ja-JP');
+                console.log("Selected voice:", japaneseVoice ? japaneseVoice.name : "Default");
+            };
+            if (synth.getVoices().length !== 0) {
+                setVoice();
+            } else {
+                synth.onvoiceschanged = setVoice;
             }
+        }
+
+        function speakText(text) {
+            if (synth.speaking) synth.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'ja-JP';
+            if (japaneseVoice) utterance.voice = japaneseVoice;
+            utterance.rate = 0.9; // Slightly slower
+            utterance.pitch = 1.0; // Normal pitch
             synth.speak(utterance);
         }
 
         function handleMicClick() {
-            if (isListening) {
-                recognition.stop();
-                return;
-            }
-            if (window.location.protocol !== 'https:') {
-                showNotification('音声認識は安全な接続(HTTPS)でのみ利用可能です。');
-                return;
-            }
-            recognition.start();
+            if (isListening) { recognition.stop(); return; }
+            if (window.location.protocol !== 'https:') { showNotification('音声認識は安全な接続(HTTPS)でのみ利用可能です。'); return; }
+            try { recognition.start(); } catch(e) { console.error("Mic start error:", e); showNotification("マイクの起動に失敗しました。ブラウザがマイクを認識しているか確認してください。"); }
         }
 
         if(recognition){
-            recognition.onstart = () => {
-                isListening = true;
-                micBtn.classList.add('mic-active');
-            };
-            recognition.onend = () => {
-                isListening = false;
-                micBtn.classList.remove('mic-active');
-            };
+            recognition.onstart = () => { isListening = true; micBtn.classList.add('mic-active'); };
+            recognition.onend = () => { isListening = false; micBtn.classList.remove('mic-active'); };
             recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                chatInput.value = transcript;
-                setTimeout(() => handleSendMessage(), 200); // Send automatically after recognition
+                chatInput.value = event.results[0][0].transcript;
+                setTimeout(() => handleSendMessage(), 200);
             };
             recognition.onerror = (event) => {
-                console.error("Speech recognition error:", event.error);
-                if (event.error === 'not-allowed') {
-                    showNotification('マイクへのアクセスが許可されていません。ブラウザの設定を確認してください。');
-                } else if (event.error === 'no-speech') {
-                    showNotification('音声が検出されませんでした。もう一度お試しください。');
-                } else {
-                    showNotification(`音声認識エラーが発生しました: ${event.error}`);
-                }
-                isListening = false;
-                micBtn.classList.remove('mic-active');
+                console.error("Speech recognition error:", event.error, event.message);
+                let message = `音声認識エラー: ${event.error}`;
+                if (event.error === 'not-allowed') message = 'マイクへのアクセスが許可されていません。ブラウザの設定を確認してください。';
+                if (event.error === 'no-speech') message = '音声が検出されませんでした。もう一度お試しください。';
+                if (event.error === 'network') message = 'ネットワークエラーにより音声認識に失敗しました。';
+                if (event.error === 'service-not-allowed') message = 'セキュリティ上の理由でマイクが利用できません。(HTTPS接続が必要です)';
+                showNotification(message);
             };
         }
 
@@ -469,6 +415,7 @@
 
         // --- Initial Load ---
         window.onload = () => {
+            initSpeechSynthesis();
             if (!recognition) {
                 micBtn.disabled = true;
                 micBtn.title = "お使いのブラウザは音声認識に対応していません。";
