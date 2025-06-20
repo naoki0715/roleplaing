@@ -3,428 +3,743 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Role-Playing Tool (Stabilized & Enhanced)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>AI営業ロープレツール - キャリコンジョブ版</title>
     <style>
-        #chat-history::-webkit-scrollbar { width: 8px; }
-        #chat-history::-webkit-scrollbar-track { background: #f1f5f9; }
-        #chat-history::-webkit-scrollbar-thumb { background-color: #94a3b8; border-radius: 10px; border: 2px solid #f1f5f9; }
-        .ai-thinking-dot { animation: bounce 1.4s infinite ease-in-out both; }
-        .ai-thinking-dot:nth-child(1) { animation-delay: -0.32s; }
-        .ai-thinking-dot:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
-        .mic-active { color: #ef4444; }
-        #notification { transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .main-interface {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            min-height: 600px;
+        }
+
+        .sidebar {
+            background: #f8f9fa;
+            padding: 30px;
+            border-right: 1px solid #e9ecef;
+        }
+
+        .persona-section {
+            margin-bottom: 30px;
+        }
+
+        .persona-section h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        .persona-option {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+        }
+
+        .persona-option:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .persona-option.active {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+
+        .scenario-info {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            color: #0066cc;
+        }
+
+        .video-area {
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .customer-video {
+            background: linear-gradient(45deg, #2c3e50, #34495e);
+            border-radius: 15px;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .customer-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 3em;
+            border: 4px solid rgba(255,255,255,0.2);
+        }
+
+        .customer-name {
+            position: absolute;
+            bottom: 15px;
+            left: 20px;
+            color: white;
+            font-weight: bold;
+            background: rgba(0,0,0,0.3);
+            padding: 5px 10px;
+            border-radius: 15px;
+        }
+
+        .chat-area {
+            flex: 1;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            min-height: 300px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #fafafa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 20px;
+            font-size: 0.95em;
+            line-height: 1.4;
+        }
+
+        .message.ai .message-content {
+            background: #667eea;
+            color: white;
+            border-bottom-left-radius: 5px;
+        }
+
+        .message.user .message-content {
+            background: #28a745;
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .controls {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            flex: 1;
+            text-align: center;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .feedback-panel {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .feedback-panel.show {
+            display: block;
+        }
+
+        .score {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .score-label {
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .score-value {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .feedback-text {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .recording {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .speaking {
+            animation: speak 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes speak {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
     </style>
 </head>
-<body class="bg-slate-100 font-sans antialiased text-slate-800">
-    
-    <!-- Notification Element -->
-    <div id="notification" class="hidden fixed top-5 right-5 bg-red-600 text-white py-3 px-5 rounded-lg shadow-xl z-50 transform translate-x-full opacity-0">
-        <!-- Message will be injected here -->
-    </div>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 AI営業ロープレツール</h1>
+            <p>キャリコンジョブ - 建設業界特化版</p>
+        </div>
 
-    <div id="app" class="container mx-auto p-4 max-w-4xl">
-
-        <!-- Header -->
-        <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-slate-700">AIロールプレイングツール</h1>
-            <p class="text-slate-500 mt-2">音声対話とシナリオ作成で、より実践的なトレーニングを</p>
-        </header>
-
-        <!-- Screen: Scenario Selection -->
-        <main id="screen-scenario-select">
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <div class="flex justify-between items-center mb-6">
-                    <div>
-                        <h2 class="text-2xl font-bold mb-1">シナリオ選択</h2>
-                        <p class="text-slate-600">トレーニングしたいシナリオを選んでください。</p>
-                    </div>
-                    <button id="show-create-scenario-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">
-                        <i class="fas fa-plus mr-2"></i>新しいシナリオを作成
+        <div class="main-interface">
+            <div class="sidebar">
+                <div class="persona-section">
+                    <h3>顧客タイプ選択</h3>
+                    <button class="persona-option active" data-persona="cooperative">
+                        <strong>協調的な田中社長</strong><br>
+                        <small>話を聞いてくれるが慎重</small>
+                    </button>
+                    <button class="persona-option" data-persona="emotional">
+                        <strong>感情的な佐藤部長</strong><br>
+                        <small>クレームを強く表現</small>
+                    </button>
+                    <button class="persona-option" data-persona="logical">
+                        <strong>論理的な鈴木専務</strong><br>
+                        <small>データ重視、冷静判断</small>
                     </button>
                 </div>
-                <div id="scenario-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Scenarios will be injected here -->
+
+                <div class="scenario-info">
+                    <h4>📋 今回のシナリオ</h4>
+                    <p>既存商材の効果に不満を持つ顧客への対応から、キャリコンジョブへの提案に繋げる</p>
                 </div>
             </div>
-        </main>
 
-        <!-- Screen: Create Scenario -->
-        <main id="screen-create-scenario" class="hidden">
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <h2 class="text-2xl font-bold mb-6">シナリオ作成</h2>
-                <div class="space-y-4">
-                    <div>
-                        <label for="new-scenario-title" class="block text-sm font-medium text-slate-700">タイトル</label>
-                        <input type="text" id="new-scenario-title" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500" placeholder="例：見込み客へのフォローアップ電話">
+            <div class="video-area">
+                <div class="customer-video">
+                    <div class="customer-avatar" id="customerAvatar">👔</div>
+                    <div class="customer-name" id="customerName">田中社長</div>
+                </div>
+
+                <div class="chat-area">
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message ai">
+                            <div class="message-content">
+                                こんにちは。田中です。今日はお忙しい中お時間をいただき、ありがとうございます。実は、現在契約している求人サービスについて相談があります...
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <label for="new-scenario-description" class="block text-sm font-medium text-slate-700">状況説明</label>
-                        <textarea id="new-scenario-description" rows="2" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500" placeholder="例：先日デモを体験したお客様に、導入の意向を確認します。"></textarea>
-                    </div>
-                    <div>
-                        <label for="new-scenario-persona" class="block text-sm font-medium text-slate-700">AIの役割（ペルソナ）</label>
-                        <input type="text" id="new-scenario-persona" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500" placeholder="例：AIペルソナ: 導入に前向きだが、価格を気にしている担当者">
-                    </div>
-                    <div>
-                        <label for="new-scenario-prompt" class="block text-sm font-medium text-slate-700">AIへの指示（システムプロンプト）</label>
-                        <textarea id="new-scenario-prompt" rows="4" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500" placeholder="例：あなたは企業の担当者です。ユーザーからの電話を受けます。製品には魅力を感じていますが、価格がネックになっています。ユーザーに価格交渉を促すような質問をしてください。"></textarea>
+                    
+                    <div class="controls">
+                        <button class="btn btn-primary" id="startBtn">
+                            🎤 録音開始
+                        </button>
+                        <button class="btn btn-danger" id="stopBtn" disabled>
+                            ⏹️ 録音停止
+                        </button>
+                        <div class="status" id="status">録音ボタンを押して開始</div>
+                        <button class="btn btn-success" id="resetBtn">
+                            🔄 リセット
+                        </button>
                     </div>
                 </div>
-                <div class="mt-6 flex justify-end gap-4">
-                    <button id="cancel-create-scenario-btn" class="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold py-2 px-4 rounded-lg transition-colors">キャンセル</button>
-                    <button id="save-scenario-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">このシナリオを保存</button>
+
+                <div class="feedback-panel" id="feedbackPanel">
+                    <h3>📊 今回の評価</h3>
+                    <div class="score">
+                        <span class="score-label">傾聴スキル</span>
+                        <span class="score-value" id="listeningScore">-</span>
+                    </div>
+                    <div class="score">
+                        <span class="score-label">共感表現</span>
+                        <span class="score-value" id="empathyScore">-</span>
+                    </div>
+                    <div class="score">
+                        <span class="score-label">解決提案力</span>
+                        <span class="score-value" id="solutionScore">-</span>
+                    </div>
+                    <div class="score">
+                        <span class="score-label">商談移行スキル</span>
+                        <span class="score-value" id="transitionScore">-</span>
+                    </div>
+                    <div class="feedback-text" id="feedbackText"></div>
                 </div>
             </div>
-        </main>
-
-        <!-- Screen: Role-Playing Interface -->
-        <main id="screen-roleplay" class="hidden">
-            <div class="bg-white p-4 sm:p-6 rounded-lg shadow-md">
-                <div class="flex justify-between items-center border-b pb-4 mb-4">
-                    <div>
-                        <h2 id="roleplay-title" class="text-xl md:text-2xl font-bold"></h2>
-                        <p id="roleplay-persona" class="text-slate-500"></p>
-                    </div>
-                    <button id="end-session-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">
-                        <i class="fas fa-stop-circle mr-2"></i>終了する
-                    </button>
-                </div>
-                <div id="chat-history" class="h-96 overflow-y-auto mb-4 p-4 bg-slate-50 rounded-lg">
-                    <!-- Chat messages will appear here -->
-                </div>
-                <div id="ai-thinking-indicator" class="hidden flex items-center mb-4">
-                     <div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center mr-3 flex-shrink-0"><i class="fas fa-robot text-slate-500"></i></div>
-                    <div class="bg-slate-200 rounded-lg p-3 flex items-center">
-                        <div class="ai-thinking-dot w-2 h-2 bg-slate-500 rounded-full mr-1"></div>
-                        <div class="ai-thinking-dot w-2 h-2 bg-slate-500 rounded-full mr-1"></div>
-                        <div class="ai-thinking-dot w-2 h-2 bg-slate-500 rounded-full"></div>
-                    </div>
-                </div>
-                <div class="flex items-center">
-                    <button id="mic-btn" class="text-slate-500 hover:text-blue-500 p-3 text-2xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed" title="マイク入力"><i class="fas fa-microphone"></i></button>
-                    <input type="text" id="chat-input" class="flex-grow border rounded-l-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="メッセージを入力、またはマイクをクリック...">
-                    <button id="send-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-r-lg transition-colors">
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
-                </div>
-            </div>
-        </main>
-
-        <!-- Screen: Feedback -->
-        <main id="screen-feedback" class="hidden">
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <h2 class="text-2xl font-bold mb-4 text-center">フィードバックレポート</h2>
-                <div id="feedback-loading" class="text-center p-8">
-                    <i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i>
-                    <p class="mt-4 text-slate-600">対話を分析しています...</p>
-                </div>
-                <div id="feedback-content" class="hidden"></div>
-                <div class="mt-8 text-center">
-                    <button id="restart-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg transition-colors mr-4"><i class="fas fa-redo mr-2"></i>もう一度挑戦</button>
-                    <button id="new-scenario-btn" class="bg-slate-500 hover:bg-slate-600 text-white font-bold py-2 px-6 rounded-lg transition-colors"><i class="fas fa-list-ul mr-2"></i>シナリオ選択へ</button>
-                </div>
-            </div>
-        </main>
-
+        </div>
     </div>
 
     <script>
-        // --- DOM Elements ---
-        const screens = { scenarioSelect: document.getElementById('screen-scenario-select'), createScenario: document.getElementById('screen-create-scenario'), roleplay: document.getElementById('screen-roleplay'), feedback: document.getElementById('screen-feedback') };
-        const notification = document.getElementById('notification');
-        const showCreateScenarioBtn = document.getElementById('show-create-scenario-btn');
-        const saveScenarioBtn = document.getElementById('save-scenario-btn');
-        const cancelCreateScenarioBtn = document.getElementById('cancel-create-scenario-btn');
-        const scenarioList = document.getElementById('scenario-list');
-        const roleplayTitle = document.getElementById('roleplay-title');
-        const roleplayPersona = document.getElementById('roleplay-persona');
-        const chatHistory = document.getElementById('chat-history');
-        const chatInput = document.getElementById('chat-input');
-        const sendBtn = document.getElementById('send-btn');
-        const micBtn = document.getElementById('mic-btn');
-        const endSessionBtn = document.getElementById('end-session-btn');
-        const aiThinkingIndicator = document.getElementById('ai-thinking-indicator');
-        const feedbackLoading = document.getElementById('feedback-loading');
-        const feedbackContent = document.getElementById('feedback-content');
-        const restartBtn = document.getElementById('restart-btn');
-        const newScenarioBtn = document.getElementById('new-scenario-btn');
+        // グローバル変数
+        let recognition;
+        let synthesis = window.speechSynthesis;
+        let isRecording = false;
+        let currentPersona = 'cooperative';
+        let conversationStage = 'complaint'; // complaint -> resolution -> proposal
+        let turnCount = 0;
 
-        // --- Speech API ---
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const recognition = SpeechRecognition ? new SpeechRecognition() : null;
-        const synth = window.speechSynthesis;
-        let japaneseVoice = null;
-
-        // --- Scenarios Definition ---
-        let scenarios = [
-             { id: 'sales_initial_visit', title: '新規顧客への初回訪問（営業）', description: '自社の新しいSaaS製品を紹介するため、興味を持ってくれている企業の担当者と初めて面会します。', icon: 'fa-handshake', persona: 'AIペルソナ: 担当者（多忙だが協力的）', systemPrompt: `あなたは企業の担当者です。多忙ですが、新しいSaaS製品には興味があります。ユーザーは営業担当として、あなたに製品の魅力を伝えます。簡潔で分かりやすい説明を好み、具体的な導入メリットや価格について質問してください。ユーザーの対話が続くように、相槌や質問を投げかけてください。`, isCustom: false },
-             { id: 'claim_handling', title: '製品不具合に関するクレーム対応', description: '購入した製品に不具合があったと、少し怒り気味のお客様から連絡がありました。状況をヒアリングし、対応を協議します。', icon: 'fa-phone-volume', persona: 'AIペルソナ: 顧客（不満・少し感情的）', systemPrompt: `あなたはこの会社の製品を購入した顧客です。製品に不具合があり、非常に困っており、少し怒っています。ユーザーはサポート担当として、あなたの話を聞きます。あなたはまず状況を感情的に訴えますが、ユーザーの対応が真摯であれば、徐々に冷静さを取り戻します。具体的な解決策を求めてください。`, isCustom: false },
-             { id: '1on1_meeting', title: '部下との1on1ミーティング', description: '最近、少し元気がないように見える部下と1on1を行います。安心して話せる雰囲気を作り、現状の課題や悩みを引き出します。', icon: 'fa-users', persona: 'AIペルソナ: 部下（悩みがある・口が重い）', systemPrompt: `あなたはとある企業の社員です。最近、業務の量と責任が増したことで、少し疲れており、将来に漠然とした不安を感じています。ユーザーはあなたの上司です。あなたは自分から積極的に話すタイプではありませんが、上司が真摯に耳を傾け、安心できる雰囲気を作ってくれれば、少しずつ自分の気持ちを話そうとします。`, isCustom: false },
-        ];
-
-        // --- App State ---
-        let currentScenario = null;
-        let conversationHistoryForApi = [];
-        let isListening = false;
-        
-        // --- Functions ---
-        
-        function showNotification(message, duration = 5000) {
-            notification.textContent = message;
-            notification.classList.remove('hidden', 'translate-x-full', 'opacity-0');
-            notification.classList.add('translate-x-0', 'opacity-100');
-            setTimeout(() => {
-                notification.classList.remove('translate-x-0', 'opacity-100');
-                notification.classList.add('translate-x-full', 'opacity-0');
-                setTimeout(() => notification.classList.add('hidden'), 300);
-            }, duration);
-        }
-
-        function showScreen(screenName) {
-            Object.values(screens).forEach(screen => screen.classList.add('hidden'));
-            screens[screenName].classList.remove('hidden');
-        }
-
-        function renderScenarios() {
-            scenarioList.innerHTML = '';
-            scenarios.forEach(scenario => {
-                const card = document.createElement('div');
-                card.className = 'bg-slate-50 hover:bg-slate-100 p-6 rounded-lg shadow-sm cursor-pointer transition-all duration-300 transform hover:scale-105 relative';
-                card.innerHTML = `<div class="flex items-center mb-3">
-                        <i class="fas ${scenario.icon || 'fa-comment-dots'} text-2xl text-blue-500 mr-4"></i>
-                        <h3 class="text-lg font-bold text-slate-800">${scenario.title}</h3>
-                    </div>
-                    <p class="text-slate-600">${scenario.description}</p>
-                    ${scenario.isCustom ? '<span class="absolute top-2 right-2 text-xs bg-blue-500 text-white font-semibold py-1 px-2 rounded-full">自作</span>' : ''}`;
-                card.addEventListener('click', () => startRoleplay(scenario));
-                scenarioList.appendChild(card);
-            });
-        }
-        
-        function startRoleplay(scenario) {
-            currentScenario = scenario;
-            roleplayTitle.textContent = scenario.title;
-            roleplayPersona.textContent = scenario.persona;
-            chatHistory.innerHTML = '';
-            
-            // API用の会話履歴を初期化
-            conversationHistoryForApi = [];
-
-            const firstMessage = "こんにちは。本日はよろしくお願いいたします。";
-            addMessageToChat('ai', firstMessage);
-            // API履歴にはユーザーの発話から追加するため、AIの初回メッセージは追加しない
-            speakText(firstMessage);
-
-            showScreen('roleplay');
-        }
-
-        function addMessageToChat(sender, text) {
-            const messageWrapper = document.createElement('div');
-            messageWrapper.className = `flex items-start mb-4 ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
-            const iconClass = sender === 'user' ? 'fa-user' : 'fa-robot';
-            const bgColor = sender === 'user' ? 'bg-blue-500 text-white' : 'bg-slate-200 text-slate-800';
-            const iconBgColor = sender === 'user' ? 'bg-blue-200 text-blue-600' : 'bg-slate-200 text-slate-500';
-            messageWrapper.innerHTML = `<div class="flex items-end ${sender === 'user' ? 'flex-row-reverse' : 'flex-row'}">
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center ${iconBgColor} flex-shrink-0">
-                        <i class="fas ${iconClass}"></i>
-                    </div>
-                    <div class="p-3 rounded-lg max-w-sm md:max-w-md ${bgColor} ${sender === 'user' ? 'mr-3' : 'ml-3'}">${text}</div>
-                </div>`;
-            chatHistory.appendChild(messageWrapper);
-            chatHistory.scrollTop = chatHistory.scrollHeight;
-        }
-
-        async function handleSendMessage() {
-            const userText = chatInput.value.trim();
-            if (!userText) return;
-
-            addMessageToChat('user', userText);
-            conversationHistoryForApi.push({ role: 'user', parts: [{ text: userText }] });
-            chatInput.value = '';
-            aiThinkingIndicator.classList.remove('hidden');
-
-            try {
-                const payload = { 
-                    contents: conversationHistoryForApi,
-                    systemInstruction: { parts: [{ text: currentScenario.systemPrompt }] }
-                };
-                
-                console.log("Sending payload to API:", JSON.stringify(payload, null, 2));
-
-                const apiKey = ""; // Leave blank
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                
-                const responseData = await response.json();
-                console.log("Received response from API:", responseData);
-                
-                if (!response.ok) {
-                    throw new Error(`API Error: ${response.statusText} - ${responseData.error?.message || 'Unknown error'}`);
+        // 顧客ペルソナデータ
+        const personas = {
+            cooperative: {
+                name: "田中社長",
+                avatar: "👔",
+                personality: "協調的",
+                responses: {
+                    complaint: [
+                        "実は、今使っている求人サービスなんですが、なかなか効果が出なくて困っているんです。",
+                        "費用をかけているのに、いい人材が集まらないというか...何か改善方法はありませんか？"
+                    ],
+                    resolution: [
+                        "なるほど、そういう方法もあるんですね。確かにそれは改善につながりそうです。",
+                        "他にも何か良いサービスがあれば教えていただけますか？"
+                    ],
+                    proposal: [
+                        "キャリコンジョブですか...成功報酬型というのは魅力的ですね。",
+                        "具体的にはどのような仕組みになっているんですか？"
+                    ]
                 }
-
-                let aiText = "申し訳ありません、うまく応答できませんでした。";
-                if (responseData.candidates && responseData.candidates.length > 0 && responseData.candidates[0].content.parts.length > 0) {
-                     aiText = responseData.candidates[0].content.parts[0].text;
-                } else if (responseData.promptFeedback) {
-                     aiText = `応答を生成できませんでした。理由: ${responseData.promptFeedback.blockReason}`;
+            },
+            emotional: {
+                name: "佐藤部長",
+                avatar: "😤",
+                personality: "感情的",
+                responses: {
+                    complaint: [
+                        "もう本当に困ってるんですよ！今の求人サービス、全然ダメじゃないですか！",
+                        "お金ばっかり取って、結果は出ない。担当者もコロコロ変わるし、連絡も遅い！"
+                    ],
+                    resolution: [
+                        "まあ、それで少しは良くなるかもしれませんが...でも根本的な解決になるんですか？",
+                        "今まで散々期待を裏切られてきたので、正直信用できないんですよね..."
+                    ],
+                    proposal: [
+                        "また新しいサービスですか？どうせ同じようなものでしょう？",
+                        "成功報酬型って言っても、本当に効果があるんですか？証拠はあるんですか？"
+                    ]
                 }
-
-                addMessageToChat('ai', aiText);
-                conversationHistoryForApi.push({ role: 'model', parts: [{ text: aiText }] });
-                speakText(aiText);
-
-            } catch (error) {
-                console.error("Error calling Gemini API:", error);
-                addMessageToChat('ai', "エラーが発生しました。しばらくしてから再度お試しください。");
-                showNotification(`APIエラー: ${error.message}`);
-            } finally {
-                aiThinkingIndicator.classList.add('hidden');
+            },
+            logical: {
+                name: "鈴木専務",
+                avatar: "🤔",
+                personality: "論理的",
+                responses: {
+                    complaint: [
+                        "現在利用している求人サービスのROIを分析したところ、期待値を下回る結果となっています。",
+                        "具体的なデータと改善案を提示していただけますか？数字で説明してください。"
+                    ],
+                    resolution: [
+                        "その改善案のエビデンスはありますか？過去の実績データを見せていただけますか？",
+                        "コストパフォーマンスの観点から、投資対効果を試算してみる必要がありますね。"
+                    ],
+                    proposal: [
+                        "キャリコンジョブの成功報酬型モデルの詳細な料金体系を教えてください。",
+                        "他社との比較データと、建設業界での実績値を数字で示していただけますか？"
+                    ]
+                }
             }
-        }
-        
-        async function handleEndSession() {
-            showScreen('feedback');
-            feedbackContent.classList.add('hidden');
-            feedbackLoading.classList.remove('hidden');
-
-            try {
-                const fullConversation = conversationHistoryForApi.map(turn => `${turn.role === 'user' ? 'あなた' : 'AI'}: ${turn.parts[0].text}`).join('\n');
-                const feedbackPrompt = `以下のロールプレイング対話ログを分析し、ユーザー（「あなた」）のコミュニケーションについて、プロのビジネス研修講師の視点からフィードバックレポートを作成してください。\n\n# シナリオ設定\n${currentScenario.title}\n${currentScenario.description}\n\n# 対話ログ\n${fullConversation}\n\n# 出力形式\n以下のJSON形式で、具体的な発言を引用しながら、客観的かつ建設的なフィードバックを生成してください。\n{\n    "overallScore": "S, A, B, C, Dの5段階評価",\n    "summary": "対話全体の総評（150字程度）",\n    "goodPoints": [\n        { "point": "良かった点（例：効果的な質問ができていた）", "example": "引用する具体的な発言" }\n    ],\n    "improvementPoints": [\n        { "point": "改善点（例：結論を先に話すとより伝わりやすい）", "example": "引用する具体的な発言" }\n    ]\n}`;
-
-                const payload = { 
-                    contents: [{ role: 'user', parts: [{ text: feedbackPrompt }] }],
-                    generationConfig: { responseMimeType: "application/json" }
-                };
-                const apiKey = ""; // Leave blank
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
-
-                const result = await response.json();
-                if (result.candidates && result.candidates.length > 0) {
-                     const feedbackData = JSON.parse(result.candidates[0].content.parts[0].text);
-                     renderFeedback(feedbackData);
-                } else { throw new Error("フィードバックが生成されませんでした。"); }
-            } catch (error) {
-                console.error("Error generating feedback:", error);
-                feedbackContent.innerHTML = `<p class="text-center text-red-500">フィードバックの生成中にエラーが発生しました。</p>`;
-                showNotification("フィードバックの生成に失敗しました。");
-            } finally {
-                feedbackLoading.classList.add('hidden');
-                feedbackContent.classList.remove('hidden');
-            }
-        }
-        
-        function renderFeedback(data) {
-            const scoreColor = { 'S': 'text-purple-500', 'A': 'text-red-500', 'B': 'text-blue-500', 'C': 'text-yellow-600', 'D': 'text-gray-500' };
-            const createPointList = (points, icon, color) => {
-                if (!points || points.length === 0) return '<p class="text-slate-500">特にありません。</p>';
-                return points.map(p => `<div class="mb-4">
-                        <p class="font-bold"><i class="fas ${icon} ${color} mr-2"></i>${p.point || ''}</p>
-                        ${p.example ? `<p class="text-sm text-slate-600 bg-slate-100 p-2 rounded mt-1 border-l-4 border-slate-300">引用: 「${p.example}」</p>` : ''}
-                    </div>`).join('');
-            };
-            feedbackContent.innerHTML = `<div class="text-center mb-6"><p class="text-lg text-slate-600">総合評価</p><p class="text-7xl font-black ${scoreColor[data.overallScore] || 'text-gray-700'}">${data.overallScore}</p></div>
-                <div class="bg-slate-50 p-4 rounded-lg mb-6"><h3 class="font-bold text-lg mb-2"><i class="fas fa-comment-alt mr-2 text-slate-500"></i>総評</h3><p>${data.summary}</p></div>
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div class="bg-green-50 p-4 rounded-lg"><h3 class="font-bold text-lg mb-4 text-green-700"><i class="fas fa-thumbs-up mr-2"></i>良かった点</h3>${createPointList(data.goodPoints, 'fa-check-circle', 'text-green-500')}</div>
-                    <div class="bg-orange-50 p-4 rounded-lg"><h3 class="font-bold text-lg mb-4 text-orange-700"><i class="fas fa-bullseye mr-2"></i>改善できる点</h3>${createPointList(data.improvementPoints, 'fa-lightbulb', 'text-orange-500')}</div>
-                </div>`;
-        }
-        
-        // --- Scenario Management ---
-        function saveCustomScenarios() {
-            localStorage.setItem('ai-roleplay-custom-scenarios', JSON.stringify(scenarios.filter(s => s.isCustom)));
-        }
-        function loadCustomScenarios() {
-            const saved = localStorage.getItem('ai-roleplay-custom-scenarios');
-            if (saved) scenarios.push(...JSON.parse(saved));
-        }
-        function handleSaveScenario() {
-            const newScenario = { id: `custom_${Date.now()}`, title: document.getElementById('new-scenario-title').value.trim(), description: document.getElementById('new-scenario-description').value.trim(), persona: document.getElementById('new-scenario-persona').value.trim(), systemPrompt: document.getElementById('new-scenario-prompt').value.trim(), icon: 'fa-user-edit', isCustom: true };
-            if (!newScenario.title || !newScenario.systemPrompt) { showNotification('「タイトル」と「AIへの指示」は必須です。'); return; }
-            scenarios.push(newScenario);
-            saveCustomScenarios();
-            renderScenarios();
-            showScreen('scenarioSelect');
-            document.getElementById('new-scenario-title').value = ''; document.getElementById('new-scenario-description').value = ''; document.getElementById('new-scenario-persona').value = ''; document.getElementById('new-scenario-prompt').value = '';
-        }
-
-        // --- Speech API Functions ---
-        function initSpeechSynthesis() {
-            const setVoice = () => {
-                const voices = synth.getVoices();
-                japaneseVoice = voices.find(voice => voice.lang === 'ja-JP' && voice.name.includes('Kyoko')) 
-                             || voices.find(voice => voice.lang === 'ja-JP');
-                console.log("Selected voice:", japaneseVoice ? japaneseVoice.name : "Default");
-            };
-            if (synth.getVoices().length !== 0) {
-                setVoice();
-            } else {
-                synth.onvoiceschanged = setVoice;
-            }
-        }
-
-        function speakText(text) {
-            if (synth.speaking) synth.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'ja-JP';
-            if (japaneseVoice) utterance.voice = japaneseVoice;
-            utterance.rate = 0.9; // Slightly slower
-            utterance.pitch = 1.0; // Normal pitch
-            synth.speak(utterance);
-        }
-
-        function handleMicClick() {
-            if (isListening) { recognition.stop(); return; }
-            if (window.location.protocol !== 'https:') { showNotification('音声認識は安全な接続(HTTPS)でのみ利用可能です。'); return; }
-            try { recognition.start(); } catch(e) { console.error("Mic start error:", e); showNotification("マイクの起動に失敗しました。ブラウザがマイクを認識しているか確認してください。"); }
-        }
-
-        if(recognition){
-            recognition.onstart = () => { isListening = true; micBtn.classList.add('mic-active'); };
-            recognition.onend = () => { isListening = false; micBtn.classList.remove('mic-active'); };
-            recognition.onresult = (event) => {
-                chatInput.value = event.results[0][0].transcript;
-                setTimeout(() => handleSendMessage(), 200);
-            };
-            recognition.onerror = (event) => {
-                console.error("Speech recognition error:", event.error, event.message);
-                let message = `音声認識エラー: ${event.error}`;
-                if (event.error === 'not-allowed') message = 'マイクへのアクセスが許可されていません。ブラウザの設定を確認してください。';
-                if (event.error === 'no-speech') message = '音声が検出されませんでした。もう一度お試しください。';
-                if (event.error === 'network') message = 'ネットワークエラーにより音声認識に失敗しました。';
-                if (event.error === 'service-not-allowed') message = 'セキュリティ上の理由でマイクが利用できません。(HTTPS接続が必要です)';
-                showNotification(message);
-            };
-        }
-
-        // --- Event Listeners ---
-        sendBtn.addEventListener('click', handleSendMessage);
-        chatInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleSendMessage(); } });
-        endSessionBtn.addEventListener('click', handleEndSession);
-        restartBtn.addEventListener('click', () => startRoleplay(currentScenario));
-        newScenarioBtn.addEventListener('click', () => showScreen('scenarioSelect'));
-        showCreateScenarioBtn.addEventListener('click', () => showScreen('createScenario'));
-        cancelCreateScenarioBtn.addEventListener('click', () => showScreen('scenarioSelect'));
-        saveScenarioBtn.addEventListener('click', handleSaveScenario);
-        micBtn.addEventListener('click', handleMicClick);
-
-        // --- Initial Load ---
-        window.onload = () => {
-            initSpeechSynthesis();
-            if (!recognition) {
-                micBtn.disabled = true;
-                micBtn.title = "お使いのブラウザは音声認識に対応していません。";
-            }
-            loadCustomScenarios();
-            renderScenarios();
-            showScreen('scenarioSelect');
         };
 
+        // 評価基準
+        const evaluationCriteria = {
+            listening: ['聞く', '理解', 'わかり', 'そうです'],
+            empathy: ['大変', 'お気持ち', '困って', 'ご心配'],
+            solution: ['改善', '解決', '提案', 'いたします'],
+            transition: ['キャリコンジョブ', '新しい', 'ご紹介', '成功報酬']
+        };
+
+        // 初期化
+        function init() {
+            setupSpeechRecognition();
+            setupEventListeners();
+            updatePersonaDisplay();
+        }
+
+        // 音声認識設定
+        function setupSpeechRecognition() {
+            if ('webkitSpeechRecognition' in window) {
+                recognition = new webkitSpeechRecognition();
+            } else if ('SpeechRecognition' in window) {
+                recognition = new SpeechRecognition();
+            } else {
+                alert('お使いのブラウザは音声認識に対応していません。Chrome、Edge、Safariをお使いください。');
+                return;
+            }
+
+            recognition.lang = 'ja-JP';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            recognition.onstart = function() {
+                isRecording = true;
+                document.getElementById('status').textContent = '🎤 録音中...';
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+                document.getElementById('startBtn').classList.add('recording');
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                addMessage('user', transcript);
+                processUserInput(transcript);
+            };
+
+            recognition.onend = function() {
+                isRecording = false;
+                document.getElementById('status').textContent = 'AI応答を生成中...';
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+                document.getElementById('startBtn').classList.remove('recording');
+            };
+
+            recognition.onerror = function(event) {
+                console.error('音声認識エラー:', event.error);
+                document.getElementById('status').textContent = '音声認識エラーが発生しました';
+                isRecording = false;
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+            };
+        }
+
+        // イベントリスナー設定
+        function setupEventListeners() {
+            document.getElementById('startBtn').addEventListener('click', startRecording);
+            document.getElementById('stopBtn').addEventListener('click', stopRecording);
+            document.getElementById('resetBtn').addEventListener('click', resetConversation);
+
+            // ペルソナ選択
+            document.querySelectorAll('.persona-option').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelector('.persona-option.active').classList.remove('active');
+                    this.classList.add('active');
+                    currentPersona = this.dataset.persona;
+                    updatePersonaDisplay();
+                    resetConversation();
+                });
+            });
+        }
+
+        // 録音開始
+        function startRecording() {
+            if (recognition) {
+                recognition.start();
+            }
+        }
+
+        // 録音停止
+        function stopRecording() {
+            if (recognition && isRecording) {
+                recognition.stop();
+            }
+        }
+
+        // ペルソナ表示更新
+        function updatePersonaDisplay() {
+            const persona = personas[currentPersona];
+            document.getElementById('customerName').textContent = persona.name;
+            document.getElementById('customerAvatar').textContent = persona.avatar;
+        }
+
+        // メッセージ追加
+        function addMessage(sender, content) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = content;
+            
+            messageDiv.appendChild(contentDiv);
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // ユーザー入力処理
+        function processUserInput(userInput) {
+            turnCount++;
+            
+            // AI応答生成
+            setTimeout(() => {
+                const aiResponse = generateAIResponse(userInput);
+                addMessage('ai', aiResponse);
+                speakText(aiResponse);
+                
+                // 会話段階更新
+                updateConversationStage(userInput);
+                
+                // 評価実行（5ターン後）
+                if (turnCount >= 5) {
+                    setTimeout(() => {
+                        showEvaluation(getAllUserMessages());
+                    }, 2000);
+                }
+                
+                document.getElementById('status').textContent = '録音ボタンを押して続行';
+            }, 1000);
+        }
+
+        // AI応答生成
+        function generateAIResponse(userInput) {
+            const persona = personas[currentPersona];
+            const responses = persona.responses[conversationStage];
+            
+            // キーワードベースの応答選択
+            let selectedResponse = responses[Math.floor(Math.random() * responses.length)];
+            
+            // ユーザーの発言に応じた調整
+            if (userInput.includes('申し訳') || userInput.includes('すみません')) {
+                if (currentPersona === 'emotional') {
+                    selectedResponse = "まあ、謝ってもらえるのは嬉しいですが、具体的にどうしてくれるんですか？";
+                } else if (currentPersona === 'logical') {
+                    selectedResponse = "謝罪よりも、具体的な改善計画を提示してください。";
+                }
+            }
+            
+            if (userInput.includes('キャリコンジョブ')) {
+                conversationStage = 'proposal';
+            }
+            
+            return selectedResponse;
+        }
+
+        // 音声合成
+        function speakText(text) {
+            if (synthesis.speaking) {
+                synthesis.cancel();
+            }
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'ja-JP';
+            utterance.rate = 0.9;
+            utterance.pitch = 1.0;
+            
+            // 顧客ペルソナに応じた音声調整
+            if (currentPersona === 'emotional') {
+                utterance.rate = 1.1;
+                utterance.pitch = 1.2;
+            } else if (currentPersona === 'logical') {
+                utterance.rate = 0.8;
+                utterance.pitch = 0.9;
+            }
+            
+            utterance.onstart = function() {
+                document.getElementById('customerAvatar').classList.add('speaking');
+            };
+            
+            utterance.onend = function() {
+                document.getElementById('customerAvatar').classList.remove('speaking');
+            };
+            
+            synthesis.speak(utterance);
+        }
+
+        // 会話段階更新
+        function updateConversationStage(userInput) {
+            if (conversationStage === 'complaint' && 
+                (userInput.includes('改善') || userInput.includes('解決') || userInput.includes('対応'))) {
+                conversationStage = 'resolution';
+            } else if (conversationStage === 'resolution' && 
+                      (userInput.includes('キャリコンジョブ') || userInput.includes('新しい') || userInput.includes('他の'))) {
+                conversationStage = 'proposal';
+            }
+        }
+
+        // 全ユーザーメッセージ取得
+        function getAllUserMessages() {
+            const userMessages = [];
+            document.querySelectorAll('.message.user .message-content').forEach(msg => {
+                userMessages.push(msg.textContent);
+            });
+            return userMessages.join(' ');
+        }
+
+        // 評価表示
+        function showEvaluation(allUserText) {
+            const scores = calculateScores(allUserText);
+            
+            document.getElementById('listeningScore').textContent = scores.listening + '点';
+            document.getElementById('empathyScore').textContent = scores.empathy + '点';
+            document.getElementById('solutionScore').textContent = scores.solution + '点';
+            document.getElementById('transitionScore').textContent = scores.transition + '点';
+            
+            const averageScore = Math.round((scores.listening + scores.empathy + scores.solution + scores.transition) / 4);
+            
+            let feedbackText = `総合評価: ${averageScore}点\n\n`;
+            
+            if (averageScore >= 80) {
+                feedbackText += "素晴らしい対応でした！顧客との信頼関係を築き、自然に商談に繋げることができています。";
+            } else if (averageScore >= 60) {
+                feedbackText += "良い対応でした。もう少し顧客の感情に寄り添い、具体的な解決策を提示することで、さらに効果的になります。";
+            } else {
+                feedbackText += "改善の余地があります。まずは顧客の話をしっかりと聞き、共感を示してから解決策を提案しましょう。";
+            }
+            
+            document.getElementById('feedbackText').textContent = feedbackText;
+            document.getElementById('feedbackPanel').classList.add('show');
+        }
+
+        // スコア計算
+        function calculateScores(userText) {
+            const scores = {};
+            
+            Object.keys(evaluationCriteria).forEach(skill => {
+                let score = 50; // ベーススコア
+                const keywords = evaluationCriteria[skill];
+                
+                keywords.forEach(keyword => {
+                    if (userText.includes(keyword)) {
+                        score += 15;
+                    }
+                });
+                
+                // 長さボーナス（適度な説明）
+                if (userText.length > 100) {
+                    score += 10;
+                }
+                
+                scores[skill] = Math.min(100, score);
+            });
+            
+            return scores;
+        }
+
+        // 会話リセット
+        function resetConversation() {
+            document.getElementById('chatMessages').innerHTML = `
+                <div class="message ai">
+                    <div class="message-content">
+                        こんにちは。${personas[currentPersona].name}です。今日はお忙しい中お時間をいただき、ありがとうございます。実は、現在契約している求人サービスについて相談があります...
+                    </div>
+                </div>
+            `;
+            
+            conversationStage = 'complaint';
+            turnCount = 0;
+            document.getElementById('feedbackPanel').classList.remove('show');
+            document.getElementById('status').textContent = '録音ボタンを押して開始';
+        }
+
+        // ページ読み込み時に初期化
+        window.addEventListener('load', init);
     </script>
 </body>
 </html>
